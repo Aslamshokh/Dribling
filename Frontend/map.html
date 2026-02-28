@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dribbling - Карта стадионов</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="header">
+        <div class="header-title">Карта матчей</div>
+        <div>
+            <i class="fas fa-map" style="color: var(--accent-green);"></i>
+        </div>
+    </div>
+
+    <div class="container" style="padding: 0;">
+        <div id="map" style="height: calc(100vh - 130px);"></div>
+    </div>
+
+    <!-- Bottom Navigation -->
+    <nav class="bottom-nav">
+        <a href="/profile.html" class="nav-item">
+            <i class="fas fa-user"></i>
+            <span>Профиль</span>
+        </a>
+        <a href="/matches.html" class="nav-item">
+            <i class="fas fa-futbol"></i>
+            <span>Матчи</span>
+        </a>
+        <a href="/create-match.html" class="nav-item">
+            <i class="fas fa-plus-circle"></i>
+            <span>Создать</span>
+        </a>
+    </nav>
+
+    <script src="/js/app.js"></script>
+    <script src="/js/api.js"></script>
+    <script>
+        let map;
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initMap();
+            await loadMatches();
+        });
+
+        async function initMap() {
+            // Координаты Пенджикента
+            const panjakent = [39.4952, 67.6093];
+            
+            map = L.map('map').setView(panjakent, 12);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+        }
+
+        async function loadMatches() {
+            try {
+                const matches = await api.getMatches({ status: 'open' });
+                
+                matches.forEach(match => {
+                    if (match.latitude && match.longitude) {
+                        const marker = L.marker([match.latitude, match.longitude]).addTo(map);
+                        
+                        const playersText = `${match.players_count}/${match.max_players}`;
+                        const dateText = new Date(match.date_time).toLocaleString('ru-RU', {
+                            day: '2-digit',
+                            month: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                        
+                        marker.bindPopup(`
+                            <div style="color: #000;">
+                                <strong>${match.title}</strong><br>
+                                🏟 ${match.stadium}<br>
+                                📅 ${dateText}<br>
+                                👥 ${playersText}<br>
+                                <button onclick="navigateTo('/match-detail.html?id=${match.id}')" 
+                                        style="margin-top: 8px; padding: 4px 8px; background: #1db954; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                                    Подробнее
+                                </button>
+                            </div>
+                        `);
+                    }
+                });
+            } catch (error) {
+                console.error('Error loading matches for map:', error);
+            }
+        }
+    </script>
+</body>
+</html>
